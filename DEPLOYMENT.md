@@ -8,19 +8,17 @@
 
 ## Thông Tin Học Viên
 
-| Mục | Nội dung |
-|-----|----------|
-| Họ và tên | (điền họ tên) |
-| Mã học viên | (điền mã học viên) |
-| Repo | (điền link repo K4-L3B-DAY12-HoVaTen-MSSV-CloudServicesAndDeployment) |
+| Họ và tên | Phạm Thị Ngọc Anh |
+| Mã học viên | 2A202602831 |
+| Repo | https://github.com/ngocanhpham-hust/K4-L3B-DAY12-PhamThiNgocAnh-2A202602831-CloudServicesAndDeployment |
 
 ## Service
 
 | Mục | Nội dung |
 |-----|----------|
-| Public URL | https://TODO-thay-bang-url-that.up.railway.app |
-| Platform | Railway / Render / Cloud Run — (điền platform bạn dùng) |
-| Ngày deploy | (điền ngày) |
+| Public URL | https://day12-agent-7ncz.onrender.com |
+| Platform | Render |
+| Ngày deploy | 29/06/2026 |
 
 ## Biến Môi Trường Đã Set Trên Cloud
 
