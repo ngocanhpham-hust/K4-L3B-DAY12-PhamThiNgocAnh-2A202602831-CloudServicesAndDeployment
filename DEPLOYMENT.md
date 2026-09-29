@@ -26,53 +26,72 @@ Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
 
 | Biến | Đã set | Ghi chú |
 |------|--------|---------|
-| `PORT` | ✅ | platform tự gán |
-| `AGENT_API_KEY` | ✅ | đặt trong dashboard, không nằm trong repo |
-| `REDIS_URL` | ✅ | (điền: Redis add-on của platform / Upstash / ...) |
-| `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
-| `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
-| `LOG_LEVEL` | ✅ | INFO |
+| `PORT` | ✅ | Render tự gán lúc chạy service |
+| `AGENT_API_KEY` | ✅ | Render Environment, không nằm trong repository |
+| `REDIS_URL` | ✅ | Internal connection string từ Render Key Value `day12-redis` |
+| `RATE_LIMIT_PER_MINUTE` | ✅ | Khai báo trong `render.yaml` |
+| `MONTHLY_BUDGET_USD` | ✅ | Khai báo trong `render.yaml` |
+| `LOG_LEVEL` | ✅ | Khai báo trong `render.yaml` |
 
 ## Lệnh Kiểm Tra
 
-Thay `<URL>` bằng Public URL ở trên:
-
 ```bash
 # 1. Liveness — mong đợi 200 {"status":"ok"}
-curl -i <URL>/health
+curl -i https://day12-agent-7ncz.onrender.com/health
 
 # 2. Readiness — mong đợi 200 {"status":"ready"} (đã nối được Redis)
-curl -i <URL>/ready
+curl -i https://day12-agent-7ncz.onrender.com/ready
 
 # 3. Không có API key — mong đợi 401
-curl -i -X POST <URL>/ask \
+curl -i -X POST https://day12-agent-7ncz.onrender.com/ask \
   -H "Content-Type: application/json" \
   -d '{"question":"Hello"}'
 
 # 4. Có API key — mong đợi 200 kèm câu trả lời
-curl -i -X POST <URL>/ask \
+curl -i -X POST https://day12-agent-7ncz.onrender.com/ask \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: $AGENT_API_KEY" \
+  -H "X-API-Key: $DEPLOY_API_KEY" \
   -H "X-User-Id: sv-test" \
   -d '{"question":"Deploy là gì?"}'
 
-# 5. Rate limit — gọi 15 lần, những lần cuối phải trả 429
-for i in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code} " -X POST <URL>/ask \
+# 5. Rate limit — 10 request đầu được nhận, các request sau trả 429
+TEST_USER="rate-test-$(date +%s)"
+for i in $(seq 1 12); do
+  curl -s -o /dev/null -w "%{http_code} " \
+    -X POST https://day12-agent-7ncz.onrender.com/ask \
     -H "Content-Type: application/json" \
-    -H "X-API-Key: $AGENT_API_KEY" \
-    -H "X-User-Id: sv-test" \
+    -H "X-API-Key: $DEPLOY_API_KEY" \
+    -H "X-User-Id: $TEST_USER" \
     -d '{"question":"test"}'
-done; echo
+done
+echo
 ```
 
 ## Kết Quả Chạy Thật
 
-Dán output của các lệnh trên vào đây:
+```
+GET /health
+HTTP/2 200
+{"status":"ok","service":"day12-agent","version":"1.0.0"}
 
+GET /ready
+HTTP/2 200
+{"status":"ready","redis":true}
+
+POST /ask không có X-API-Key
+HTTP/2 401
+{"detail":"invalid or missing API key"}
+
+POST /ask có X-API-Key hợp lệ
+HTTP/2 200
+{"answer":"Câu hỏi hay. Deploy là gì thường được giải quyết bằng cách chuẩn hóa môi trường chạy: cùng một image chạy giống nhau ở laptop và trên cloud.","user_id":"sv-deploy-check","history_length":0,"cost_usd":2.145e-05,"tokens":{"in":3,"out":35}}
+
+Rate limit (12 request liên tiếp với cùng một user mới)
+200 200 200 200 200 200 200 200 200 200 429 429
 ```
-(điền output)
-```
+
+Các kết quả trên được kiểm tra trực tiếp với public URL. `DEPLOY_API_KEY` chỉ
+nằm trong `.env` cục bộ; tài liệu không chứa giá trị key.
 
 ## Ảnh Chụp Màn Hình
 
@@ -83,17 +102,6 @@ Dán output của các lệnh trên vào đây:
 
 ---
 
-## Nếu Dùng Phương Án Dự Phòng
+## Phương Án Dự Phòng
 
-Không đăng ký được tài khoản cloud? Vẫn nộp được bài, nhưng CP5 tối đa 60% điểm:
-
-1. Đặt `LOCAL_FALLBACK=true` trong `.env`
-2. Chạy `docker compose up -d` rồi kiểm tra `docker compose ps`
-3. Chụp màn hình vào `screenshots/`
-4. Chạy `pytest tests/test_cp5.py -v` — bộ test sẽ tự chuyển sang kiểm tra
-   `http://localhost:8000`
-5. Ghi rõ lý do không deploy được vào phần dưới đây:
-
-```
-(điền lý do nếu dùng phương án dự phòng, ngược lại xóa mục này)
-```
+Không sử dụng. Bài được deploy trực tiếp trên Render bằng public URL ở trên.
